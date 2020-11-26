@@ -1,0 +1,18 @@
+[package]
+name = "bee-api"
+version = "0.1.0"
+authors = ["Brandon Blaylock <brandon@null.pub>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+dropshot = { git = "https://github.com/baetheus/dropshot" }
+redis = { version = "0.17.0" }
+schemars = { version = "0.8.0", features = ["chrono", "uuid"] }
+serde = { version = "1.0.0" }
+serde_derive = { version = "1.0.0" }
+serde_json = { version = "1.0.0" }
+tokio = { version = "0.2.0"}
+uuid = { version = "0.8.1", features = ["v4", "serde"] }
