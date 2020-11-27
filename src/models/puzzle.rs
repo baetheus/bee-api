@@ -2,8 +2,8 @@ use chrono::{DateTime, Utc};
 use schemars::JsonSchema;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{from_slice, to_vec};
+use std::convert::From;
 use uuid::Uuid;
-
 use redis::{ErrorKind, FromRedisValue, RedisResult, RedisWrite, ToRedisArgs, Value};
 
 #[derive(Debug, Deserialize, Serialize, Clone, JsonSchema)]
@@ -46,14 +46,31 @@ impl ToRedisArgs for PartialPuzzle {
 #[derive(Debug, Deserialize, Serialize, JsonSchema, Clone)]
 pub struct Puzzle {
     pub id: Uuid,
-    pub name: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub name: String,
     pub released_at: Option<DateTime<Utc>>,
     pub words: Vec<String>,
     pub letters: Vec<String>,
     pub middle: String,
     pub language: String,
+}
+
+impl From<PartialPuzzle> for Puzzle {
+    fn from(partial: PartialPuzzle) -> Puzzle {
+        Puzzle {
+            id: Uuid::new_v4(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            
+            name: partial.name,
+            released_at: partial.released_at,
+            words: partial.words,
+            letters: partial.letters,
+            middle: partial.middle,
+            language: partial.language,
+        }
+    }
 }
 
 impl FromRedisValue for Puzzle {

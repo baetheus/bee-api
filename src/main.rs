@@ -1,4 +1,5 @@
 pub mod models;
+pub mod routes;
 
 use dropshot::{ApiDescription, ConfigDropshot, ConfigLogging, ConfigLoggingLevel, HttpServer};
 use std::env;
