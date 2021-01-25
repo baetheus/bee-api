@@ -1,6 +1,6 @@
 [package]
 name = "bee-api"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Brandon Blaylock <brandon@null.pub>"]
 edition = "2018"
 
