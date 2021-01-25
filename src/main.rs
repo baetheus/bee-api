@@ -2,21 +2,17 @@ pub mod models;
 pub mod routes;
 
 use dropshot::{ApiDescription, ConfigDropshot, ConfigLogging, ConfigLoggingLevel, HttpServer};
-use std::env;
-use std::fs::File;
-use std::io::prelude::*;
+use std::net::{Ipv4Addr, SocketAddr};
 
 use models::context::Context;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
-    let port = env::var("PORT").expect("Required env variable PORT was not found");
-    let redis_url = env::var("REDIS_URL").expect("Required env variable REDIS_URL was not found");
+    let port = std::env::var("PORT").expect("Must set PORT environment variable");
+    let port = port.parse::<u16>().expect("Unable to parse port to u16");
+    let redis_url = std::env::var("REDIS_URL").expect("Must set REDIS_URL environment variable");
 
-    let config_dropshot = ConfigDropshot {
-        bind_address: format!("127.0.0.1:{}", port).parse().unwrap(),
-    };
-    let context = Context::new(&redis_url).await;
+    let address = SocketAddr::from((Ipv4Addr::LOCALHOST, port));
 
     let log = ConfigLogging::StderrTerminal {
         level: ConfigLoggingLevel::Info,
@@ -25,28 +21,27 @@ async fn main() -> Result<(), String> {
     .map_err(|error| format!("failed to create logger: {}", error))?;
 
     let mut api = ApiDescription::new();
-    api.register(routes::puzzle::get_puzzle_by_id).unwrap();
+    api.register(routes::puzzle::create_puzzle).unwrap();
+    api.register(routes::puzzle::read_puzzle).unwrap();
+    api.register(routes::puzzle::update_puzzle).unwrap();
+    api.register(routes::puzzle::delete_puzzle).unwrap();
+    api.register(routes::puzzle::read_puzzles).unwrap();
 
-    let mut spec = vec![];
-    api.print_openapi(
-        &mut spec,
-        &"Pet Shop",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        &"",
+    let openapi = api.openapi("Bee", "0.0.0");
+    let context = Context::new(&redis_url, openapi).await;
+
+    api.register(routes::openapi::read_openapi).unwrap();
+
+    let mut server = HttpServer::new(
+        &ConfigDropshot {
+            bind_address: address,
+            ..Default::default()
+        },
+        api,
+        context,
+        &log,
     )
-    .map_err(|e| e.to_string())?;
-
-    let mut file = File::create("spec.json").expect("Could not create spec.json file");
-    file.write_all(&spec).expect("Could not write to spec.json");
-
-    let mut server = HttpServer::new(&config_dropshot, api, context, &log)
-        .map_err(|error| format!("failed to create server: {}", error))?;
+    .map_err(|error| format!("failed to create server: {}", error))?;
     let server_task = server.run();
 
     server.wait_for_shutdown(server_task).await

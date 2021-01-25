@@ -1,25 +1,31 @@
 use std::{any::Any, sync::Arc};
 
-use dropshot::RequestContext;
+use dropshot::{OpenApiDefinition, RequestContext};
 use redis::aio::MultiplexedConnection;
+use serde_json::Value;
 
 pub struct Context {
     pub redis: MultiplexedConnection,
+    pub openapi: Value,
 }
 
 impl Context {
-    pub async fn new(redis_address: &str) -> Arc<Context> {
+    pub async fn new<'a>(redis_address: &str, openapi: OpenApiDefinition<'a>) -> Arc<Context> {
         let redis = redis::Client::open(redis_address.to_owned())
             .expect(&format!(
                 "Unable to open client connection to {}",
                 &redis_address
             ))
-            .create_multiplexed_tokio_connection()
+            .get_multiplexed_tokio_connection()
             .await
-            .expect("Could not create multiplexed redis connection.")
-            .0;
+            .expect("Could not create multiplexed redis connection.");
 
-        Arc::new(Context { redis: redis })
+        Arc::new(Context {
+            redis: redis,
+            openapi: openapi
+                .json()
+                .expect("Unable to convert openapi definition to json"),
+        })
     }
 
     pub fn from_rqctx(rqctx: &Arc<RequestContext>) -> Arc<Context> {
