@@ -11,14 +11,14 @@ async fn main() -> Result<(), String> {
     let port = std::env::var("PORT").expect("Must set PORT environment variable");
     let port = port.parse::<u16>().expect("Unable to parse port to u16");
     let redis_url = std::env::var("REDIS_URL").expect("Must set REDIS environment variable");
-
+    println!("PORT environment variable set to {}", port);
     let address = SocketAddr::from((Ipv4Addr::LOCALHOST, port));
 
     let log = ConfigLogging::StderrTerminal {
         level: ConfigLoggingLevel::Info,
     }
     .to_logger("bee-api")
-    .map_err(|error| format!("failed to create logger: {}", error))?;
+    .map_err(|error| format!("Failed to create logger: {}", error))?;
 
     let mut api = ApiDescription::new();
     api.register(routes::puzzle::create_puzzle).unwrap();
@@ -41,7 +41,7 @@ async fn main() -> Result<(), String> {
         context,
         &log,
     )
-    .map_err(|error| format!("failed to create server: {}", error))?;
+    .map_err(|error| format!("Failed to create server: {}", error))?;
     let server_task = server.run();
 
     server.wait_for_shutdown(server_task).await
